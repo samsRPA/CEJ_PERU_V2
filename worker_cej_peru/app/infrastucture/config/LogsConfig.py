@@ -45,16 +45,25 @@ def setup_logger(log_path: Path):
 
 
 async def start_logger():
-    """Monitorea el cambio de día y reinicia los logs automáticamente"""
+    """Monitorea el cambio de día y reinicia los logs solo de lunes a viernes"""
     logger = logging.getLogger()
-    fecha_actual = datetime.now(ZoneInfo("America/Bogota")).date()
+    zona = ZoneInfo("America/Bogota")
+
+    fecha_actual = datetime.now(zona).date()
 
     while True:
         await asyncio.sleep(60)  # Verifica cada 60 segundos
-        nueva_fecha = datetime.now(ZoneInfo("America/Bogota")).date()
+        ahora = datetime.now(zona)
+        nueva_fecha = ahora.date()
 
         if nueva_fecha != fecha_actual:
-            logging.info("📅 Cambio de día detectado. Reiniciando archivo de log.")
-            paths = HoyPathsDto.build().dict()
-            setup_logger(paths["logs_file"])
-            fecha_actual = nueva_fecha  # <-- AQUÍ estaba el error (coma en lugar de asignación simple)
+            dia_semana = ahora.weekday()  # 0=lunes, 6=domingo
+
+            if dia_semana < 5:  # lunes (0) a viernes (4)
+                logging.info("📅 Cambio de día hábil detectado. Reiniciando archivo de log.")
+                paths = HoyPathsDto.build().dict()
+                setup_logger(paths["logs_file"])
+            else:
+                logging.info("📅 Cambio de día (fin de semana). No se crea log.")
+
+            fecha_actual = nueva_fecha

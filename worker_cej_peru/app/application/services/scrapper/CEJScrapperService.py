@@ -113,14 +113,19 @@ class CEJScrapperService(ICEJScrapperService):
 
         finally:
           
+            if case_download_dir :
+                try:
+                    shutil.rmtree(case_download_dir)
+                    self.logger.info(f"🧹 Carpeta temporal eliminada: {case_download_dir}")
+                except Exception as e:
+                    self.logger.warning(f"⚠️ No se pudo borrar {case_download_dir}: {e}")
+                    
             if conn:
                 try:
                     await self.db.release_connection(conn)
                 except Exception as e:
                     self.logger.warning(f"Error liberando conexión DB: {e}")
-
-
-                
+          
 
 
 

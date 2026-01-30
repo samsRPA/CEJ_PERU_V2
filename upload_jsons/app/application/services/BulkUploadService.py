@@ -126,20 +126,20 @@ class BulkUploadService(IBulkUploadService):
 
         finally:
 
-            try:
-                json_dir = Path("/app/output/jsons")
+            # try:
+            #     json_dir = Path("/app/output/jsons")
 
-                if json_dir.exists():
-                    for item in json_dir.iterdir():
-                        if item.is_file():
-                            item.unlink()  # eliminar archivo
-                        elif item.is_dir():
-                            shutil.rmtree(item)  # eliminar carpeta y su contenido
+            #     if json_dir.exists():
+            #         for item in json_dir.iterdir():
+            #             if item.is_file():
+            #                 item.unlink()  # eliminar archivo
+            #             elif item.is_dir():
+            #                 shutil.rmtree(item)  # eliminar carpeta y su contenido
 
-                    self.logger.info("🧹 Carpeta jsons limpiada correctamente.")
+            #         self.logger.info("🧹 Carpeta jsons limpiada correctamente.")
 
-            except Exception as cleanup_error:
-                self.logger.error(f"⚠ Error al limpiar la carpeta jsons: {cleanup_error}")
+            # except Exception as cleanup_error:
+            #     self.logger.error(f"⚠ Error al limpiar la carpeta jsons: {cleanup_error}")
 
             if conn:
                 self.db.release_connection(conn)

@@ -26,7 +26,7 @@ class DownloadService(IDownloadService):
     async def upload_data(self, tab ,radicado, court_office_code, conn, case_download_dir, data_process_rama, actors_rama):
         try:
             #insertar proceso rama
-            #await self._insert_data_process_actors_rama( radicado, data_process_rama, conn, actors_rama)
+            await self._insert_data_process_actors_rama( radicado, data_process_rama, conn, actors_rama)
             
             # 🔓 Mostrar todos los paneles
             await tab.execute_script("""
@@ -169,16 +169,12 @@ class DownloadService(IDownloadService):
                     if not is_insert_s3:
                         continue
 
-                    # insert_bd= await self.repository.insert_document(conn,fecha_formateada,radicado,consecutivo,ruta_S3,"",data["origen_datos"],"pdf",fecha_registro_tyba)
+                    insert_bd= await self.repository.insert_document(conn,fecha_formateada,radicado,consecutivo,ruta_S3,"",data["origen_datos"],"pdf",fecha_registro_tyba)
 
-                    # if not insert_bd:
-                    #     continue
+                    if not insert_bd:
+                        continue
                             
-                    self.logger.info(f" ✅ Insertado en control autos rama 1 con radicado {radicado}, fecha {fecha_formateada} y consecutivo {consecutivo} ")
-
-
-    
-                
+                    self.logger.info(f" ✅ Insertado en control autos rama 1 con radicado {radicado}, fecha {fecha_formateada} y consecutivo {consecutivo} ")     
 
             try:
                 jsons_dir = "/app/output/jsons"
@@ -197,24 +193,13 @@ class DownloadService(IDownloadService):
                 self.logger.error(f"❌ Error guardando NDJSON: {e}")
 
             self.logger.info(f"✅ Total actuaciones extraídas: {len(resoluciones)}")
+            
             return resoluciones
         except Exception as e:
             self.logger.error(f"❌ Error  en subir la informacion: {e}")
-        finally:
-            time.sleep(10)
-            if case_download_dir :
-                try:
-                    shutil.rmtree(case_download_dir)
-                    self.logger.info(f"🧹 Carpeta temporal eliminada: {case_download_dir}")
-                except Exception as e:
-                    self.logger.warning(f"⚠️ No se pudo borrar {case_download_dir}: {e}")
+      
 
                
-
-            
-
-
-
     async def _insert_data_process_actors_rama(self, radicado, data_process_rama, conn, actors_rama):
 
         for dato_nombre, dato_valor in data_process_rama.items():
