@@ -37,10 +37,10 @@ async def main():
     db = dependency.data_base()
     try:
         await db.connect()
-        # await asyncio.gather(
-        await consumer.startConsuming()
-        #     start_logger()
-        # )
+        await asyncio.gather(
+            consumer.startConsuming(),
+            start_logger()
+        )
     except Exception as e:
         logger.exception("❌ Error durante la ejecución principal", exc_info=e)
     finally:

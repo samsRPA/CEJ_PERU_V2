@@ -72,20 +72,16 @@ class DownloadService(IDownloadService):
 
                     self.logger.info(f"⚠️ Mensaje panel {idx}: {msg}")
 
-                    if "no se pueden visualizar" in msg:
+                   
+                    if   msg:
                         fecha_res = await self._safe_text(
-                            tab, base_xpath,
-                            "//div[div[contains(.,'Fecha de Ingreso:')]]/div[contains(@class,'fleft')]"
+                        tab,
+                        base_xpath,
+                        "//div[contains(@class,'fleft')][1]"
                         )
                         downloadable = False
 
-                    elif "no se encuentra anexado" in msg:
-                        fecha_res = await self._safe_text(
-                            tab, base_xpath,
-                            "//div[div[contains(.,'Fecha de Resolución:')]]/div[contains(@class,'fleft')]"
-                        )
-                        downloadable = False
-
+            
                 except:
                     # 🔹 Sin advertencia
                     fecha_res = await self._safe_text(
@@ -138,6 +134,7 @@ class DownloadService(IDownloadService):
                 #data["downloadable"] = downloadable
 
                 resoluciones.append(data)
+               
                 
                 if downloadable:
                     dataToCheck = {
@@ -155,7 +152,7 @@ class DownloadService(IDownloadService):
                         consecutive_map[key] = consecutivo + 1
 
                     ruta_S3 = f"{fecha_formateada}_{radicado}_{consecutivo}"
-                    self.logger.info(f"concecutivo: {consecutivo}")
+                    
                     dataToCheck["CONSECUTIVO"] = consecutivo
 
                         
@@ -163,6 +160,9 @@ class DownloadService(IDownloadService):
 
                     if exists:
                         continue
+
+                    case_download_dir.mkdir(parents=True, exist_ok=True)
+                    time.sleep(1)
 
                     is_insert_s3 = await self._download_records( tab,  fecha_formateada, radicado, data, consecutivo, case_download_dir,consecutive_map,base_xpath, idx)
 
@@ -198,7 +198,7 @@ class DownloadService(IDownloadService):
         except Exception as e:
             self.logger.error(f"❌ Error  en subir la informacion: {e}")
       
-
+   
                
     async def _insert_data_process_actors_rama(self, radicado, data_process_rama, conn, actors_rama):
 

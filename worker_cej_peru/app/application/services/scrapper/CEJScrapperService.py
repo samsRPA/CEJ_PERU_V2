@@ -44,9 +44,7 @@ class CEJScrapperService(ICEJScrapperService):
             Path("/app/output/descargas")
             / f"temp_{worker_id}_{radicado}"
         )
-        case_download_dir.mkdir(parents=True, exist_ok=True)
-            
-
+          
 
         options = ChromiumOptions()
         options.binary_location = "/usr/bin/chromium"

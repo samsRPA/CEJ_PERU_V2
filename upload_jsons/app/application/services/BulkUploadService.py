@@ -10,6 +10,7 @@ import json
 from datetime import datetime
 import math  
 import logging
+from datetime import datetime
 
 import time
 class BulkUploadService(IBulkUploadService):
@@ -107,12 +108,20 @@ class BulkUploadService(IBulkUploadService):
 
                 with open(file_path, "r", encoding="utf-8") as f:
                     json_content = json.load(f)
+                       # 🔥 SOLO CEJ_PERU TIENE FECHAS PROBLEMÁTICAS
+                if tipo == "CEJ_PERU":
+                    total_original = len(json_content)
+                    json_content = self._filtrar_registros_fechas_invalidas(json_content)
+                    self.logger.info(
+                        f"🧹 CEJ_PERU depurado: {total_original} → {len(json_content)}"
+                    )
 
                 # Convertir a string para insertarlo
-                json_content = json.dumps(json_content, ensure_ascii=False)
+                  # Convertir a string para Oracle
+                json_str = json.dumps(json_content, ensure_ascii=False)
 
                 # Insert masivo
-                insertado = self.repository.insert_masivo(conn, tipo, json_content)
+                insertado = self.repository.insert_masivo(conn, tipo, json_str)
 
                 if insertado:
                     self.logger.info(f"✅ Insert masivo exitoso para {tipo}")
@@ -125,22 +134,59 @@ class BulkUploadService(IBulkUploadService):
             self.logger.error(f"❌ Error inesperado en carga_masiva: {e}")
 
         finally:
+        
+            ruta = Path("/app/output/descargas")
 
-            # try:
-            #     json_dir = Path("/app/output/jsons")
+            if ruta.exists() and ruta.is_dir():
+                shutil.rmtree(ruta)
 
-            #     if json_dir.exists():
-            #         for item in json_dir.iterdir():
-            #             if item.is_file():
-            #                 item.unlink()  # eliminar archivo
-            #             elif item.is_dir():
-            #                 shutil.rmtree(item)  # eliminar carpeta y su contenido
+            try:
+                json_dir = Path("/app/output/jsons")
 
-            #         self.logger.info("🧹 Carpeta jsons limpiada correctamente.")
+                if json_dir.exists():
+                    for item in json_dir.iterdir():
+                        if item.is_file():
+                            item.unlink()  # eliminar archivo
+                        elif item.is_dir():
+                            shutil.rmtree(item)  # eliminar carpeta y su contenido
 
-            # except Exception as cleanup_error:
-            #     self.logger.error(f"⚠ Error al limpiar la carpeta jsons: {cleanup_error}")
+                    self.logger.info("🧹 Carpeta jsons limpiada correctamente.")
+
+            except Exception as cleanup_error:
+                self.logger.error(f"⚠ Error al limpiar la carpeta jsons: {cleanup_error}")
 
             if conn:
                 self.db.release_connection(conn)
 
+
+
+
+    def _filtrar_registros_fechas_invalidas(self, registros):
+        """
+        Elimina SOLO los registros que tengan fechas inválidas.
+        Campos validados:
+        - fecha -> DD-MM-YYYY
+        - fecha_registro_tyba -> DD-MM-YYYY HH:MM:SS
+        """
+        registros_validos = []
+
+        for r in registros:
+            try:
+                if r.get("fecha"):
+                    datetime.strptime(r["fecha"], "%d-%m-%Y")
+
+                if r.get("fecha_registro_tyba"):
+                    datetime.strptime(
+                        r["fecha_registro_tyba"],
+                        "%d-%m-%Y %H:%M:%S"
+                    )
+
+                registros_validos.append(r)
+
+            except ValueError as e:
+                self.logger.warning(
+                    f"🗑 Registro eliminado por fecha inválida | "
+                    f"radicado={r.get('radicado')} | error={e}"
+                )
+
+        return registros_validos

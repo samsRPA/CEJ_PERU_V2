@@ -42,7 +42,7 @@ class GetProceedingsService(IGetProceedingsService):
                     parte_demandante=parte_demandante
                 )
                 proceedings_list.append(dto)
-                break
+                
        
             return proceedings_list
         
