@@ -29,3 +29,23 @@ async def publishAllProceedings(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+
+@router.post(
+    "/proceedings/queues_cej_peru/{radicado}",
+    status_code=status.HTTP_202_ACCEPTED
+)
+@inject
+async def publishProceeding(
+    radicado: str,
+    proceedings_cej_peru_service: IProceedingsCEJPeruService = Depends(
+        Provide[Dependencies.proceedings_cej_peru_service]
+    )
+):
+    try:
+        await proceedings_cej_peru_service.publishProceeding(radicado)
+        return {"message": "✔️ Mensajes enviados a la cola de CEJ Perú"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+

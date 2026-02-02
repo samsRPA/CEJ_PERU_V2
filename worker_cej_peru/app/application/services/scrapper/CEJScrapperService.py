@@ -113,6 +113,7 @@ class CEJScrapperService(ICEJScrapperService):
           
             if case_download_dir :
                 try:
+                    await asyncio.sleep(25)
                     shutil.rmtree(case_download_dir)
                     self.logger.info(f"🧹 Carpeta temporal eliminada: {case_download_dir}")
                 except Exception as e:

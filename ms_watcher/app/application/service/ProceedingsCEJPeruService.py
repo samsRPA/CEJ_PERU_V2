@@ -45,6 +45,23 @@ class ProceedingsCEJPeruService(IProceedingsCEJPeruService):
  
         except Exception as error:
             logging.exception(f"Error al publicar {error}")
+
+    async def publishProceeding(self,radicado):
+   
+        try:
+    
+            proceeding= await  self.getData.get_proceeding(radicado)
+            print(proceeding)
+
+            if not proceeding:
+                raise ValueError("No hay radicados para publicar")
+                
+            for proceeding in proceeding:
+                await self.producer.publishMessage(proceeding.dict())
+                
+ 
+        except Exception as error:
+            logging.exception(f"Error al publicar {error}")
       
        
     

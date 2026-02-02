@@ -49,6 +49,40 @@ class GetProceedingsService(IGetProceedingsService):
         finally:
             if conn:
                 await self.db.release_connection(conn)
+                
+    async def get_proceeding(self,radicado):
+        conn = None
+        try:
+            conn = await self.db.acquire_connection()
+            raw_keys = await self.repository.get_key_cej(conn,radicado)
+
+            proceedings_list = []
+
+            for row in raw_keys:
+                # row = (PROCESO_ID, INSTANCIA_RADICACION, ..., DEMANDADO)
+
+                instancia_radicacion = self._clean(row[1])
+                demandado_raw = self._clean(row[5])
+                demandante_raw = self._clean(row[4])
+                # Extraer apellidos igual que en Excel
+                demandado_apellidos = self._extract_surnames(demandado_raw)
+                parte_demandante = self._extract_surnames( demandante_raw )
+
+                dto = ProceedingsDto(
+                    nombre_completo=demandado_raw ,
+                    parte=demandado_apellidos,
+                    radicado=instancia_radicacion,
+                    demandante=demandado_apellidos,
+                    parte_demandante=parte_demandante
+                )
+                proceedings_list.append(dto)
+                
+       
+            return proceedings_list
+        
+        finally:
+            if conn:
+                await self.db.release_connection(conn)
 
     def _clean(self, value):
         # Si llega una Serie → tomar primer elemento

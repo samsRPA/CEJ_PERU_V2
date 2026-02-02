@@ -6,5 +6,9 @@ class IProceedingsCEJPeruService(ABC):
 
 
     @abstractmethod
-    async def publishProceedings(self,user,password,insert):
+    async def publishProceedings(self):
+        pass
+
+    @abstractmethod
+    async def publishProceeding(self,radicado):
         pass

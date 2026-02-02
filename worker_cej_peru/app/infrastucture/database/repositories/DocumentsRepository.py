@@ -116,6 +116,72 @@ class DocumentsRepository():
             raise
 
 
+    async def exists_action(self, conn, data: dict) -> bool:
+        """
+        Verifica si existe un documento en la tabla CONTROL_AUTOS_RAMA_1 
+        según la fecha de notificación, radicación y consecutivo.
+        Retorna True si existe, False si no.
+        """
+        sql = """
+            SELECT 1
+            FROM actuaciones_rama
+            WHERE RADICADO_RAMA = :radicado
+            AND COD_DESPACHO_RAMA = :cod_despacho_rama
+            AND FECHA_ACTUACION = :fecha_actuacion
+            AND ACTUACION_RAMA = :actuacion_rama
+            AND ANOTACION_RAMA = :anotacion_rama
+            AND ORIGEN_DATOS = :origen
+            
+            
+
+
+        """
+
+        binds = {
+        "radicado": data.get("radicado"),
+        "cod_despacho_rama": data.get("cod_despacho_rama"),
+        "fecha_actuacion": data.get("fecha"),
+        "actuacion_rama": data.get("actuacion_rama"),
+        "anotacion_rama": data.get("anotacion_rama"),
+        "origen": data.get("origen_datos"),
+    }
+
+
+        try:
+          
+
+            async with conn.cursor() as cursor:
+                await cursor.execute(sql, binds)
+                row = await cursor.fetchone()
+
+            exists = row is not None
+
+            if exists:
+                self.logger.info(
+                "📄 Actuación existente | "
+                f"RADICADO={binds['radicado']} | "
+                f"DESPACHO={binds['cod_despacho_rama']} | "
+                f"FECHA={binds['fecha_actuacion']} | "
+                f"ACTUACION={binds['actuacion_rama']}"
+            )
+            else:
+                self.logger.info(
+                    "📄 Actuación NO encontrada | "
+                    f"RADICADO={binds['radicado']} | "
+                    f"DESPACHO={binds['cod_despacho_rama']} | "
+                    f"FECHA={binds['fecha_actuacion']} | "
+                    f"ACTUACION={binds['actuacion_rama']}"
+                )
+            return exists
+
+        except Exception as err:
+            self.logger.error(
+                f"🚨 Error al verificar existencia de documento RADICACION={binds.get('radicacion')}: {err}",
+                exc_info=True
+            )
+            raise
+
+
 
    
     async def get_max_consecutive(self, conn, data: dict) -> int:

@@ -133,6 +133,12 @@ class DownloadService(IDownloadService):
                 data["fecha_registro_tyba"] = fecha_registro_tyba
                 #data["downloadable"] = downloadable
 
+
+                exists_action = await self.repository.exists_action( conn, data)
+                
+                if exists_action:
+                    continue
+
                 resoluciones.append(data)
                
                 
@@ -167,6 +173,7 @@ class DownloadService(IDownloadService):
                     is_insert_s3 = await self._download_records( tab,  fecha_formateada, radicado, data, consecutivo, case_download_dir,consecutive_map,base_xpath, idx)
 
                     if not is_insert_s3:
+                        self._rollback_consecutive( consecutive_map, key)
                         continue
 
                     insert_bd= await self.repository.insert_document(conn,fecha_formateada,radicado,consecutivo,ruta_S3,"",data["origen_datos"],"pdf",fecha_registro_tyba)
@@ -296,6 +303,10 @@ class DownloadService(IDownloadService):
                 #self._rollback_consecutive(self, consecutive_map, key)
                 self.logger.error("No apareció ningún archivo descargado")
                 return False
+            
+            if not self.validate_and_cleanup_file(archivo_reciente):
+                self.logger.warning("⚠️ Archivo eliminado: no es PDF ni Word")
+                return False
 
             # ⏳ Esperar estabilidad del archivo
             if not self.wait_for_file_stable(archivo_reciente):
@@ -343,11 +354,51 @@ class DownloadService(IDownloadService):
 
             return False
 
-    # def _rollback_consecutive(self, consecutive_map, key):
-    #            # 🔙 Rollback consecutivo
-    #         if consecutive_map and key in consecutive_map:
-    #             consecutive_map[key] -= 1
-    #             self.logger.info(f"↩️ Revertido consecutivo para {key}")
+    def validate_and_cleanup_file(self, file_path: str) -> bool:
+        """
+        Valida si el archivo es PDF o Word.
+        Si no lo es, lo elimina.
+
+        Retorna True si es válido, False si fue eliminado.
+        """
+
+        if not os.path.exists(file_path) or not os.path.isfile(file_path):
+            return False
+
+        # Detectar MIME
+        mime_type, _ = mimetypes.guess_type(file_path)
+
+        # Extensión
+        ext = os.path.splitext(file_path)[1].lower()
+
+        allowed_mimes = {
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        }
+
+        allowed_exts = {".pdf", ".doc", ".docx"}
+
+        is_valid = (
+            mime_type in allowed_mimes or
+            ext in allowed_exts
+        )
+
+        if not is_valid:
+            try:
+                os.remove(file_path)
+                return False
+            except Exception as e:
+                # por si falla el borrado
+                return False
+
+        return True
+
+    def _rollback_consecutive(self, consecutive_map, key):
+               # 🔙 Rollback consecutivo
+            if consecutive_map and key in consecutive_map:
+                consecutive_map[key] -= 1
+                self.logger.info(f"↩️ Revertido consecutivo para {key}")
 
 
 
