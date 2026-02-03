@@ -14,7 +14,7 @@ services:
     networks:
       - rabbitmq_net
     healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -27,7 +27,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3000m   # Máx 512 MB RAM
+          memory: 2048M
+        reservations:
+          memory: 1024M
   
   ssh_tunnel_cej_peru:
     image: alpine:latest
@@ -113,7 +115,7 @@ services:
         max-size: "20m"
         max-file: "5"
     deploy:
-      replicas: 1
+      replicas: 20
       resources:
         limits:
           memory: 2000m

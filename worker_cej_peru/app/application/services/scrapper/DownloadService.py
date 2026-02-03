@@ -13,12 +13,14 @@ import time
 import mimetypes
 import asyncio
 import subprocess
-
+from app.domain.interfaces.IFileManagerService import IFileManagerService
 
 class DownloadService(IDownloadService):
-    def __init__(self,S3_manager:IS3Manager,repository: DocumentsRepository):
+    
+    def __init__(self,S3_manager:IS3Manager,repository: DocumentsRepository,  file_manager:IFileManagerService):
         self.logger = logging.getLogger(__name__)
         self.S3_manager = S3_manager
+        self.file_manager = file_manager
         
         self.repository=repository
 
@@ -167,7 +169,7 @@ class DownloadService(IDownloadService):
                     if exists:
                         continue
 
-                    case_download_dir.mkdir(parents=True, exist_ok=True)
+                    #case_download_dir.mkdir(parents=True, exist_ok=True)
                     time.sleep(1)
 
                     is_insert_s3 = await self._download_records( tab,  fecha_formateada, radicado, data, consecutivo, case_download_dir,consecutive_map,base_xpath, idx)
@@ -271,81 +273,82 @@ class DownloadService(IDownloadService):
 
     async def _download_records(self,tab,fecha_formateada,radicado,data,consecutivo,case_download_dir,consecutive_map,base_xpath,idx):
         key = f"{radicado}-{fecha_formateada}"
-
-        try:
-            self.logger.info(f"⬇️ Descargando archivo panel {idx}")
-
-            # 📌 Archivos existentes ANTES de descargar
-            before_files = set(os.listdir(case_download_dir))
-
-            # 🔎 Buscar enlace de descarga
-            download_el = await tab.find(
-                xpath=f"{base_xpath}//a[contains(@class,'aDescarg')]",
-                timeout=5
-            )
-
-            href =  download_el.get_attribute("href")
-            if not href:
-                self.logger.error("No se pudo obtener href de descarga")
-                return False
-
-            # 🚀 Forzar descarga
-            await tab.execute_script(f'window.location.href = "{href}";')
-            self.logger.info(f"📥 URL de descarga lanzada (panel {idx})")
-
-            # ⏳ Esperar aparición de archivo nuevo
-            archivo_reciente = await self._wait_for_new_file(
-                case_download_dir,
-                before_files
-            )
-
-            if not archivo_reciente:
-                #self._rollback_consecutive(self, consecutive_map, key)
-                self.logger.error("No apareció ningún archivo descargado")
-                return False
             
-            if not self.validate_and_cleanup_file(archivo_reciente):
-                self.logger.warning("⚠️ Archivo eliminado: no es PDF ni Word")
-                return False
+        try:
+            with self.file_manager.useTempFolder(radicado) as outputDir:
+                self.logger.info(f"⬇️ Descargando archivo panel {idx}")
 
-            # ⏳ Esperar estabilidad del archivo
-            if not self.wait_for_file_stable(archivo_reciente):
-                #self._rollback_consecutive(self, consecutive_map, key)
-                self.logger.error(f"Archivo inestable: {archivo_reciente}")
-                return False
+                # 📌 Archivos existentes ANTES de descargar
+                before_files = set(os.listdir(case_download_dir))
 
-            # 🧾 Detectar tipo MIME
-            mime_type, _ = mimetypes.guess_type(archivo_reciente)
-            self.logger.info(f"📄 MIME detectado: {mime_type}")
+                # 🔎 Buscar enlace de descarga
+                download_el = await tab.find(
+                    xpath=f"{base_xpath}//a[contains(@class,'aDescarg')]",
+                    timeout=5
+                )
 
-            # 🔄 Convertir si no es PDF
-            if mime_type != "application/pdf":
-                pdf_path = os.path.splitext(archivo_reciente)[0] + ".pdf"
-                convertido = await self.convert_to_pdf(archivo_reciente, pdf_path)
-
-                if not convertido:
-                    #self._rollback_consecutive(self, consecutive_map, key)
-                    self.logger.error("Falló conversión a PDF")
+                href =  download_el.get_attribute("href")
+                if not href:
+                    self.logger.error("No se pudo obtener href de descarga")
                     return False
 
-                os.remove(archivo_reciente)
-                archivo_reciente = pdf_path
-                self.logger.info("🧩 Archivo convertido a PDF")
+                # 🚀 Forzar descarga
+                await tab.execute_script(f'window.location.href = "{href}";')
+                self.logger.info(f"📥 URL de descarga lanzada (panel {idx})")
 
-            # 📝 Renombrar
-            nuevo_nombre = f"{fecha_formateada}_{radicado}_{consecutivo}.pdf"
-            nuevo_path = os.path.join(case_download_dir, nuevo_nombre)
+                # ⏳ Esperar aparición de archivo nuevo
+                archivo_reciente = await self._wait_for_new_file(
+                    case_download_dir,
+                    before_files
+                )
 
-            os.rename(archivo_reciente, nuevo_path)
-            self.logger.info(f"✅ Archivo renombrado: {nuevo_nombre}")
+                if not archivo_reciente:
+                    #self._rollback_consecutive(self, consecutive_map, key)
+                    self.logger.error("No apareció ningún archivo descargado")
+                    return False
+                
+                if not self.validate_and_cleanup_file(archivo_reciente):
+                    self.logger.warning("⚠️ Archivo eliminado: no es PDF ni Word")
+                    return False
 
-            #☁️ Subir a S3
-            subida_ok = self.S3_manager.uploadFile(nuevo_path)
-            if not subida_ok:
-                self.logger.error("Falló subida a S3")
-                return False
+                # ⏳ Esperar estabilidad del archivo
+                if not self.wait_for_file_stable(archivo_reciente):
+                    #self._rollback_consecutive(self, consecutive_map, key)
+                    self.logger.error(f"Archivo inestable: {archivo_reciente}")
+                    return False
 
-            return True
+                # 🧾 Detectar tipo MIME
+                mime_type, _ = mimetypes.guess_type(archivo_reciente)
+                self.logger.info(f"📄 MIME detectado: {mime_type}")
+
+                # 🔄 Convertir si no es PDF
+                if mime_type != "application/pdf":
+                    pdf_path = os.path.splitext(archivo_reciente)[0] + ".pdf"
+                    convertido = await self.convert_to_pdf(archivo_reciente, pdf_path)
+
+                    if not convertido:
+                        #self._rollback_consecutive(self, consecutive_map, key)
+                        self.logger.error("Falló conversión a PDF")
+                        return False
+
+                    os.remove(archivo_reciente)
+                    archivo_reciente = pdf_path
+                    self.logger.info("🧩 Archivo convertido a PDF")
+
+                # 📝 Renombrar
+                nuevo_nombre = f"{fecha_formateada}_{radicado}_{consecutivo}.pdf"
+                nuevo_path = os.path.join(case_download_dir, nuevo_nombre)
+
+                os.rename(archivo_reciente, nuevo_path)
+                self.logger.info(f"✅ Archivo renombrado: {nuevo_nombre}")
+
+                #☁️ Subir a S3
+                subida_ok = self.S3_manager.uploadFile(nuevo_path)
+                if not subida_ok:
+                    self.logger.error("Falló subida a S3")
+                    return False
+
+                return True
 
         except Exception as e:
             self.logger.error(f"❌ Error descarga panel {idx}: {e}")

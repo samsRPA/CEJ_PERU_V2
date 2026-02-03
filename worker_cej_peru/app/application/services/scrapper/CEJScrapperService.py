@@ -2,12 +2,11 @@
 import asyncio
 import logging
 from pathlib import Path
-import re
+
 from app.domain.interfaces.ICEJScrapperService import ICEJScrapperService
-import time
-import os, time
-import json
-import pandas as pd
+
+
+
 from app.domain.interfaces.IFormScrapper import IFormScrapper
 from app.domain.interfaces.IDataBase import IDataBase
 from app.domain.interfaces.IDownloadService import IDownloadService
@@ -15,37 +14,35 @@ from pydoll.browser.chromium import Chrome
 from pydoll.browser.options import ChromiumOptions
 from pydoll.browser.tab import Tab
 import os
-import shutil
-import tempfile
+
 from pathlib import Path
 from pydoll.browser import Chrome
 
 from app.domain.interfaces.IGetRecordsService import IGetRecordsService
 
 
+
 class CEJScrapperService(ICEJScrapperService):
 
-    def __init__(self, url, form_scrapper:IFormScrapper, db: IDataBase, download_service:IDownloadService, getRecords: IGetRecordsService):
+    def __init__(self, url, form_scrapper:IFormScrapper, db: IDataBase, download_service:IDownloadService, getRecords: IGetRecordsService ):
 
         self.url=url
-        self.form_scrapper=form_scrapper
+        self.form_scrapper = form_scrapper
         self.db=db
         self.download_service=download_service
-        self.getRecords = getRecords   
+        self.getRecords = getRecords  
         self.logger= logging.getLogger(__name__)
 
 
 
     async def scrapper(self,case_information):
         radicado= case_information.radicado
-        worker_id = os.environ.get("HOSTNAME", "worker_default")
-
+    
         case_download_dir = (
             Path("/app/output/descargas")
-            / f"temp_{worker_id}_{radicado}"
+            / f"{radicado}"
         )
           
-
         options = ChromiumOptions()
         options.binary_location = "/usr/bin/chromium"
 
@@ -84,9 +81,9 @@ class CEJScrapperService(ICEJScrapperService):
                 if not is_completed_form:
                     self.logger.warning("⚠️ No se logro llenar el formulario completo.")
                     return
-                
+                court_office_code=None
               
-                radicado_Web, court_office_code = await self.getRecords.get_case_and_court(tab)
+                radicado_Web, court_office_code1 = await self.getRecords.get_case_and_court(tab)
 
                 await self.getRecords.get_actors(tab,radicado)
                
@@ -96,31 +93,30 @@ class CEJScrapperService(ICEJScrapperService):
                 await asyncio.sleep(2)
                 self.logger.info("🪟 Pasando al panel de extraccion de actuaciones")
                 
-                data_process_rama= await self.getRecords.get_case_report(tab, radicado)
+                data_process_rama, court_office_code2= await self.getRecords.get_case_report(tab, radicado)
                 actors_rama= await self.getRecords.get_actores_rama(tab,radicado)
 
                 conn = await self.db.acquire_connection()
+                
+                if court_office_code1:
+                    court_office_code= court_office_code1
+                else:
+                    court_office_code= court_office_code2
+                    
                 await self.download_service.upload_data(tab ,radicado, court_office_code, conn, case_download_dir, data_process_rama, actors_rama)
 
                 await self.db.commit(conn)
                 if browser:
                     self.logger.info("🛑 Cerrando navegador")
                     await browser.close()
+                    
                 self.logger.info(f" 🚩 Terminando scrapper para el radicado {radicado}")
                     
         except Exception as e:
             self.logger.exception("❌ Error durante la ejecución")
 
         finally:
-          
-            if case_download_dir :
-                try:
-                    await asyncio.sleep(25)
-                    shutil.rmtree(case_download_dir)
-                    self.logger.info(f"🧹 Carpeta temporal eliminada: {case_download_dir}")
-                except Exception as e:
-                    self.logger.warning(f"⚠️ No se pudo borrar {case_download_dir}: {e}")
-                    
+
             if conn:
                 try:
                     await self.db.release_connection(conn)

@@ -68,6 +68,28 @@ class BulkUploadService(IBulkUploadService):
 
             print(f"✅ Convertido: {ruta_json} ({len(registros)} registros)")
 
+    def _filtrar_registros_con_nulos(self, registros: list, tipo: str) -> list:
+        """
+        Elimina registros que contengan al menos un campo nulo (None).
+        """
+        registros_validos = []
+        descartados = 0
+
+        for r in registros:
+            if any(valor is None for valor in r.values()):
+                descartados += 1
+                self.logger.warning(
+                    f"🗑 Registro descartado por nulos ({tipo}): {r}"
+                )
+                continue
+
+            registros_validos.append(r)
+
+        self.logger.info(
+            f"🧹 {tipo} - Registros con nulos eliminados: {descartados}"
+        )
+
+        return registros_validos
 
             
 
@@ -109,6 +131,8 @@ class BulkUploadService(IBulkUploadService):
                 with open(file_path, "r", encoding="utf-8") as f:
                     json_content = json.load(f)
                        # 🔥 SOLO CEJ_PERU TIENE FECHAS PROBLEMÁTICAS
+                json_content = self._filtrar_registros_con_nulos(json_content, tipo)
+                
                 if tipo == "CEJ_PERU":
                     total_original = len(json_content)
                     json_content = self._filtrar_registros_fechas_invalidas(json_content)

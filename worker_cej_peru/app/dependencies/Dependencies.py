@@ -15,6 +15,7 @@ from app.infrastucture.database.repositories.DocumentsRepository import Document
 from app.application.services.scrapper.GetRecordsService import GetRecordsService
 
 
+
 from app.domain.interfaces.IDownloadService import IDownloadService
 from app.application.services.scrapper.DownloadService import DownloadService
 from app.application.services.scrapper.CEJScrapperService import CEJScrapperService
@@ -23,6 +24,9 @@ from app.application.services.scrapper.ScrapperService import ScrapperService
 from app.domain.interfaces.ICEJScrapperService import ICEJScrapperService
 from app.domain.interfaces.IFormScrapper import IFormScrapper
 from app.domain.interfaces.IScrapperService import IScrapperService
+from app.application.services.FileManagerService import FileManagerService
+from app.domain.interfaces.IFileManagerService import IFileManagerService
+
 
 
 class Dependencies(containers.DeclarativeContainer):
@@ -70,15 +74,21 @@ class Dependencies(containers.DeclarativeContainer):
   )
 
 
-  
+ 
 
+  file_manager_service: providers.Factory[IFileManagerService] = providers.Factory(
+    FileManagerService,
+    tempFolder= settings.provided.browser.TEMP_FOLDER
+  
+    
+  )
   download_service : providers.Factory[IDownloadService] = providers.Factory(
     DownloadService,
     S3_manager_litigando,
-    documents_repository
+    documents_repository,
+    file_manager_service
     
   )
-
 
     
   cej_scrapper_service: providers.Factory[ICEJScrapperService] = providers.Factory(
@@ -87,7 +97,8 @@ class Dependencies(containers.DeclarativeContainer):
     form_scrapper=form_scrapper,
     db=data_base,
     download_service=download_service ,
-    getRecords=get_records_service
+    getRecords=get_records_service,
+    
   )
 
 

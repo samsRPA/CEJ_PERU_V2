@@ -169,8 +169,9 @@ class GetRecordsService(IGetRecordsService):
                 texto = await el.text          # 👈 CLAVE
                 return texto.strip().replace("\xa0", "")
 
+            despacho_rama2= await get_text("Órgano Jurisdiccional")
+
             data = {
-        
                 "ESPECIALISTA LEGAL": await get_text("Especialista Legal"),
                 "FECHA INICIO": await get_text("Fecha de Inicio"),
                 "MATERIA": await get_text("Materia"),
@@ -179,10 +180,12 @@ class GetRecordsService(IGetRecordsService):
                 "ESPECIALIDAD": await get_text("Especialidad"),
                 "ESTADO": await get_text("Estado"),
                 "DISTRITO JUDICIAL": await get_text("Distrito Judicial"),
+                
+                
     
             }
 
-            return data
+            return data, despacho_rama2
 
         except Exception as e:
             self.logger.error(f"❌ Error extrayendo reporte del expediente: {e}")
