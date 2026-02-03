@@ -168,7 +168,7 @@ class DownloadService(IDownloadService):
                     if exists:
                         continue
 
-                    #case_download_dir.mkdir(parents=True, exist_ok=True)
+                    case_download_dir.mkdir(parents=True, exist_ok=True)
                     time.sleep(1)
 
                     is_insert_s3 = await self._download_records( tab,  fecha_formateada, radicado, data, consecutivo, case_download_dir,consecutive_map,base_xpath, idx)

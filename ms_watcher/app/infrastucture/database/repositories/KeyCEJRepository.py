@@ -9,7 +9,7 @@ class KeyCEJRepository:
         try:
 
             query = f""" 
-                SELECT     PI.PROCESO_ID,
+         SELECT     PI.PROCESO_ID,
                             PI.INSTANCIA_RADICACION,
                             D.DESPACHO_NOMBRE,
                             CASE 
@@ -35,6 +35,7 @@ class KeyCEJRepository:
                                                 CONNECT BY PRIOR LOCALIDAD_ID = LOCALIDAD_PADRE
                                                 START WITH LOCALIDAD_ID = 589)           
                         AND LENGTH(PI.INSTANCIA_RADICACION) > 12
+                        AND TRUNC(PI.FECHA_CREACION) = TRUNC(SYSDATE)
                         
                        
                         
