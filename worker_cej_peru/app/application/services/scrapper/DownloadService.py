@@ -136,10 +136,10 @@ class DownloadService(IDownloadService):
 
                 exists_action = await self.repository.exists_action( conn, data)
                 
-                if exists_action:
-                    continue
+                if not exists_action:
+                    
 
-                resoluciones.append(data)
+                    resoluciones.append(data)
                
                 
                 if downloadable:

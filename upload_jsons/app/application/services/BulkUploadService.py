@@ -137,8 +137,8 @@ class BulkUploadService(IBulkUploadService):
         
             ruta = Path("/app/output/descargas")
 
-            if ruta.exists() and ruta.is_dir():
-                shutil.rmtree(ruta)
+            # if ruta.exists() and ruta.is_dir():
+            #     shutil.rmtree(ruta)
 
             try:
                 json_dir = Path("/app/output/jsons")

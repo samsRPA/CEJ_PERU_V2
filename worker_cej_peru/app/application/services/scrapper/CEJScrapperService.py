@@ -73,6 +73,7 @@ class CEJScrapperService(ICEJScrapperService):
         try:
             # 🔹 Iniciar navegador
             async with Chrome(options=options) as browser:
+                self.logger.info(f"🏁 Inciando scrapper para el radicado {radicado}")
                 tab = await browser.start()
 
                 # 🔹 Abrir CEJ
@@ -105,6 +106,7 @@ class CEJScrapperService(ICEJScrapperService):
                 if browser:
                     self.logger.info("🛑 Cerrando navegador")
                     await browser.close()
+                self.logger.info(f" 🚩 Terminando scrapper para el radicado {radicado}")
                     
         except Exception as e:
             self.logger.exception("❌ Error durante la ejecución")

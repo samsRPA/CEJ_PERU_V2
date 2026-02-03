@@ -37,7 +37,7 @@ class ProceedingsCEJPeruService(IProceedingsCEJPeruService):
             proceedings= await  self.getAllProceedings()
 
             if not proceedings:
-                raise ValueError("No hay radicados para publicar")
+                raise ValueError("NO_PROCEEDINGS")
                 
             for proceeding in proceedings:
                 await self.producer.publishMessage(proceeding.dict())
@@ -54,7 +54,7 @@ class ProceedingsCEJPeruService(IProceedingsCEJPeruService):
             print(proceeding)
 
             if not proceeding:
-                raise ValueError("No hay radicados para publicar")
+                raise ValueError("PROCEEDING_NOT_FOUND")
                 
             for proceeding in proceeding:
                 await self.producer.publishMessage(proceeding.dict())

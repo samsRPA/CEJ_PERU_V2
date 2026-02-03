@@ -27,6 +27,12 @@ async def publishAllProceedings(
                             content="✔️ Mensajes enviados a las cola de cej peru")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    except ValueError as e:
+        if str(e) == "NO_PROCEEDINGS":
+            raise HTTPException(
+                status_code=status.HTTP_204_NO_CONTENT,
+                detail="No hay radicados para publicar"
+            )
 
 
 
@@ -47,5 +53,11 @@ async def publishProceeding(
         return {"message": "✔️ Mensajes enviados a la cola de CEJ Perú"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    except ValueError as e:
+        if str(e) == "PROCEEDING_NOT_FOUND":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No existe el radicado {radicado}"
+            )
 
 
