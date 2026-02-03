@@ -2,6 +2,7 @@
 import asyncio
 import logging
 from pathlib import Path
+import shutil
 
 from app.domain.interfaces.ICEJScrapperService import ICEJScrapperService
 
@@ -38,11 +39,12 @@ class CEJScrapperService(ICEJScrapperService):
     async def scrapper(self,case_information):
         radicado= case_information.radicado
     
+        worker_id = os.environ.get("HOSTNAME", "worker_default")
+
         case_download_dir = (
             Path("/app/output/descargas")
-            / f"{radicado}"
+            / f"temp_{worker_id}_{radicado}"
         )
-          
         options = ChromiumOptions()
         options.binary_location = "/usr/bin/chromium"
 
@@ -116,6 +118,15 @@ class CEJScrapperService(ICEJScrapperService):
             self.logger.exception("❌ Error durante la ejecución")
 
         finally:
+            if case_download_dir :
+                try:
+                    await asyncio.sleep(15)
+                    shutil.rmtree(case_download_dir)
+                    self.logger.info(f"🧹 Carpeta temporal eliminada: {case_download_dir}")
+                except Exception as e:
+                    self.logger.warning(f"⚠️ No se pudo borrar {case_download_dir}: {e}")
+                    
+           
 
             if conn:
                 try:

@@ -16,7 +16,6 @@ import subprocess
 from app.domain.interfaces.IFileManagerService import IFileManagerService
 
 class DownloadService(IDownloadService):
-    
     def __init__(self,S3_manager:IS3Manager,repository: DocumentsRepository,  file_manager:IFileManagerService):
         self.logger = logging.getLogger(__name__)
         self.S3_manager = S3_manager
@@ -275,7 +274,7 @@ class DownloadService(IDownloadService):
         key = f"{radicado}-{fecha_formateada}"
             
         try:
-            with self.file_manager.useTempFolder(radicado) as outputDir:
+            
                 self.logger.info(f"⬇️ Descargando archivo panel {idx}")
 
                 # 📌 Archivos existentes ANTES de descargar
