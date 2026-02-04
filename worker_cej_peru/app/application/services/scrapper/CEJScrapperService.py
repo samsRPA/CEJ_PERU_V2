@@ -3,6 +3,7 @@ import asyncio
 import logging
 from pathlib import Path
 import shutil
+import time
 
 from app.domain.interfaces.ICEJScrapperService import ICEJScrapperService
 
@@ -87,12 +88,12 @@ class CEJScrapperService(ICEJScrapperService):
               
                 radicado_Web, court_office_code1 = await self.getRecords.get_case_and_court(tab)
 
-                await self.getRecords.get_actors(tab,radicado)
+                #await self.getRecords.get_actors(tab,radicado)
                
                 await tab.execute_script("""document.querySelector('#divDetalles .divGLRE0 form button, #divDetalles .divGLRE1 form button').click();""")
                 self.logger.info("🖱️ Click en botón 'Ver detalle de expediente'")
                 
-                await asyncio.sleep(2)
+                time.sleep(1)
                 self.logger.info("🪟 Pasando al panel de extraccion de actuaciones")
                 
                 data_process_rama, court_office_code2= await self.getRecords.get_case_report(tab, radicado)
@@ -125,7 +126,7 @@ class CEJScrapperService(ICEJScrapperService):
         finally:
             if case_download_dir :
                 try:
-                    await asyncio.sleep(15)
+                    time.sleep(15)
                     shutil.rmtree(case_download_dir)
                     self.logger.info(f"🧹 Carpeta temporal eliminada: {case_download_dir}")
                 except Exception as e:

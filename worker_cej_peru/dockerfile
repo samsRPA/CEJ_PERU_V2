@@ -42,9 +42,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxfixes3 \
     libxrender1 \
     libdbus-1-3 \
+    \
+    # 🔽 AGREGADOS PARA LIBREOFFICE (CRÍTICOS)
+    openjdk-21-jre-headless \
+    libcups2 \
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    fonts-dejavu \
  && rm -rf /var/lib/apt/lists/*
-
-
 
 WORKDIR /home/app
 

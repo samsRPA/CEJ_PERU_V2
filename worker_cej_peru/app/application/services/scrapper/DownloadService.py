@@ -132,6 +132,18 @@ class DownloadService(IDownloadService):
                 )
                 data["origen_datos"] = "CEJ_PERU"
                 data["fecha_registro_tyba"] = fecha_registro_tyba
+
+
+                campos_invalidos = [
+                    key for key, value in data.items()
+                    if value is None or (isinstance(value, str) and not value.strip())
+                ]
+
+                if campos_invalidos:
+                    self.logger.warning(
+                        f"⚠️ Panel {idx} omitido. Campos inválidos: {campos_invalidos}"
+                    )
+                    continue
                 #data["downloadable"] = downloadable
 
 
@@ -322,14 +334,17 @@ class DownloadService(IDownloadService):
 
                 # 🔄 Convertir si no es PDF
                 if mime_type != "application/pdf":
+                    self.logger.info("🔄 Convirtiendo archivo a PDF con LibreOffice")
                     pdf_path = os.path.splitext(archivo_reciente)[0] + ".pdf"
                     convertido = await self.convert_to_pdf(archivo_reciente, pdf_path)
+                    time.sleep(1)
 
                     if not convertido:
                         #self._rollback_consecutive(self, consecutive_map, key)
                         self.logger.error("Falló conversión a PDF")
                         return False
-
+                    
+                    time.sleep(5)
                     os.remove(archivo_reciente)
                     archivo_reciente = pdf_path
                     self.logger.info("🧩 Archivo convertido a PDF")
@@ -407,15 +422,21 @@ class DownloadService(IDownloadService):
     async def convert_to_pdf(self, input_path: str, output_path: str) -> bool:
         try:
             subprocess.run([
-                "libreoffice", "--headless", "--convert-to", "pdf", "--outdir",
+                "libreoffice", "--headless", "--convert-to", "pdf",   "--nologo",
+                "--nodefault",
+                "--nolockcheck",
+                "--norestore",
+                "--convert-to", "pdf:writer_pdf_Export", "--outdir",
                 os.path.dirname(output_path), input_path
             ], check=True)
+
+     
             self.logger.info(f"✅ Archivo convertido correctamente con LibreOffice: {output_path}")
             return True
         except Exception as e:
             self.logger.error(f"❌ Error al convertir {input_path} con LibreOffice: {e}", exc_info=True)
             return False
-        pass
+        
 
     def wait_for_file_stable(self, path, timeout=15):
         start = time.time()
@@ -470,26 +491,5 @@ class DownloadService(IDownloadService):
         return None
 
 
-    def wait_for_file_stable(self, path, timeout=15):
-        start = time.time()
-        last_size = -1
 
-        while time.time() - start < timeout:
-            if not os.path.exists(path):
-                time.sleep(0.2)
-                continue
-
-            # ❌ Si es directorio, abortar
-            if not os.path.isfile(path):
-                return False
-
-            size = os.path.getsize(path)
-
-            if size == last_size and size > 0:
-                return True
-
-            last_size = size
-            time.sleep(0.5)
-
-        return False
 

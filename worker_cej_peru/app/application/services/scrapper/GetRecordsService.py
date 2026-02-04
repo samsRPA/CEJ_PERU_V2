@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import os
+import time
 from pydoll.browser.tab import Tab
 from app.domain.interfaces.IGetRecordsService import IGetRecordsService
 import re
@@ -21,7 +22,7 @@ class GetRecordsService(IGetRecordsService):
                 tab_codigo = await tab.find(xpath="//a[contains(text(), 'Por Código de Expediente')]",timeout=15)
 
                 await tab_codigo.scroll_into_view()
-                await asyncio.sleep(0.5)
+                time.sleep(1)
                 await tab_codigo.click()
 
                 self.logger.info("🟢 Click en 'Por Código de Expediente'")
@@ -42,7 +43,7 @@ class GetRecordsService(IGetRecordsService):
                     input_element = await tab.find(id=input_id, timeout=100)
 
                     await input_element.scroll_into_view()
-                    await asyncio.sleep(0.2)
+                    time.sleep(1)
                     await input_element.type_text(partes[i],humanize=True)
 
                 self.logger.info("✅ Radicado cargado correctamente")

@@ -34,7 +34,7 @@ class FormScrapper(IFormScrapper):
                 self.logger.warning("  No se  encontró el radicado")
                 return
                 
-            self.logger.info("✅ Se encontró el radicado. Filtro por radicado.")
+            #self.logger.info("✅ Se encontró el radicado. Filtro por radicado.")
             await self.getRecords.get_records_by_code(tab, radicado)
     
 
