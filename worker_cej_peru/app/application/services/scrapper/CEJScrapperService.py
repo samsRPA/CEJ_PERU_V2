@@ -104,6 +104,11 @@ class CEJScrapperService(ICEJScrapperService):
                     court_office_code= court_office_code1
                 else:
                     court_office_code= court_office_code2
+
+                if  not court_office_code:
+                    self.logger.info(f" 🚩 Terminando scrapper para el radicado {radicado}")
+                    return
+            
                     
                 await self.download_service.upload_data(tab ,radicado, court_office_code, conn, case_download_dir, data_process_rama, actors_rama)
 

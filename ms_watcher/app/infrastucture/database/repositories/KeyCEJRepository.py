@@ -35,7 +35,7 @@ class KeyCEJRepository:
                                                 CONNECT BY PRIOR LOCALIDAD_ID = LOCALIDAD_PADRE
                                                 START WITH LOCALIDAD_ID = 589)           
                         AND LENGTH(PI.INSTANCIA_RADICACION) > 12
-                        AND TRUNC(PI.FECHA_CREACION) = TRUNC(SYSDATE)
+                  
                         
                        
                         

@@ -189,7 +189,7 @@ class GetRecordsService(IGetRecordsService):
 
         except Exception as e:
             self.logger.error(f"❌ Error extrayendo reporte del expediente: {e}")
-            return {}
+            return None,None
 
     async def get_actores_rama(self, tab: Tab, radicado: str) -> list[dict]:
         """
