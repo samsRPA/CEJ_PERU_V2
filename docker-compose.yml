@@ -87,6 +87,7 @@ services:
       options:
         max-size: "20m"
         max-file: "5"
+    init: true
     deploy:
       resources:
         limits:
@@ -114,6 +115,7 @@ services:
       options:
         max-size: "20m"
         max-file: "5"
+    init: true
     deploy:
       replicas: 15
       resources:
@@ -133,6 +135,7 @@ services:
       options:
         max-size: "20m"
         max-file: "5"
+    init: true
     deploy:
       resources:
         limits:
@@ -155,6 +158,7 @@ services:
       options:
         max-size: "20m"
         max-file: "5"
+    init: true
     deploy:
       #replicas: 25
       resources:
