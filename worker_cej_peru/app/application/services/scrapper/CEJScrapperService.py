@@ -26,14 +26,14 @@ from app.domain.interfaces.IGetRecordsService import IGetRecordsService
 
 class CEJScrapperService(ICEJScrapperService):
 
-    def __init__(self, url, form_scrapper:IFormScrapper, db: IDataBase, download_service:IDownloadService, getRecords: IGetRecordsService, proxy ):
+    def __init__(self, url, form_scrapper:IFormScrapper, db: IDataBase, download_service:IDownloadService, getRecords: IGetRecordsService ):
 
         self.url=url
         self.form_scrapper = form_scrapper
         self.db=db
         self.download_service=download_service
         self.getRecords = getRecords  
-        self.proxy = proxy
+        
         self.logger= logging.getLogger(__name__)
 
 
@@ -58,7 +58,7 @@ class CEJScrapperService(ICEJScrapperService):
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_argument("--disable-gpu")
-        options.add_argument(f"--proxy-server={self.proxy}")
+        options.add_argument("--proxy-server=http://154.12.234.92:9700")
 
         # Descargas
         options.set_default_download_directory(str(case_download_dir))
@@ -76,10 +76,15 @@ class CEJScrapperService(ICEJScrapperService):
             async with Chrome(options=options) as browser:
                 self.logger.info(f"🏁 Inciando scrapper para el radicado {radicado}")
                 tab = await browser.start()
+  
+
+                # Toma la captura
 
                 # 🔹 Abrir CEJ
                 await tab.go_to(self.url,timeout=60)
-            
+
+                        # 🔹 Recargar la página
+                await tab.take_screenshot("/app/output/captura.png")
                 is_completed_form = await self.form_scrapper.fill_out_form(tab, case_information)
 
                 if not is_completed_form:
