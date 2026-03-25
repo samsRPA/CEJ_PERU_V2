@@ -98,6 +98,7 @@ class Dependencies(containers.DeclarativeContainer):
     db=data_base,
     download_service=download_service ,
     getRecords=get_records_service,
+    proxy= settings.provided.proxySet.proxy
     
   )
 

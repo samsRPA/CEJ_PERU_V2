@@ -117,7 +117,7 @@ services:
         max-file: "5"
     init: true
     deploy:
-      replicas: 15
+      replicas: 10
       resources:
         limits:
           memory: 2000m

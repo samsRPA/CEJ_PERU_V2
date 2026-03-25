@@ -26,13 +26,14 @@ from app.domain.interfaces.IGetRecordsService import IGetRecordsService
 
 class CEJScrapperService(ICEJScrapperService):
 
-    def __init__(self, url, form_scrapper:IFormScrapper, db: IDataBase, download_service:IDownloadService, getRecords: IGetRecordsService ):
+    def __init__(self, url, form_scrapper:IFormScrapper, db: IDataBase, download_service:IDownloadService, getRecords: IGetRecordsService, proxy ):
 
         self.url=url
         self.form_scrapper = form_scrapper
         self.db=db
         self.download_service=download_service
         self.getRecords = getRecords  
+        self.proxy = proxy
         self.logger= logging.getLogger(__name__)
 
 
@@ -57,7 +58,7 @@ class CEJScrapperService(ICEJScrapperService):
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_argument("--disable-gpu")
-
+        options.add_argument(f"--proxy-server={self.proxy}")
 
         # Descargas
         options.set_default_download_directory(str(case_download_dir))
