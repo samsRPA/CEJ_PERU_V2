@@ -1,53 +1,24 @@
-
-
 services:
-  rabbitmq:
-    image: rabbitmq:4.1.3-management
-    container_name: rabbitmqCEJPeru
-    # ports:
-    # - "5672:5672"
-    # - "15672:15672"
+ 
+
+  rabbitmq_CEJ_Peru:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_CEJ_Peru
+    ports:
+      - "5672:5672"      
+      - "15672:15672"   
     environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: admin
-      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit consumer_timeout 1800000 -rabbit heartbeat 120"
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit consumer_timeout 1800000 -rabbit heartbeat 30"
     networks:
-      - rabbitmq_net
+      - CEJ_Peru_net
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "20m"
-        max-file: "5"
-    deploy:
-      resources:
-        limits:
-          memory: 2048M
-        reservations:
-          memory: 1024M
-  
-  ssh_tunnel_cej_peru:
-    image: alpine:latest
-    container_name: ssh_tunnel_cej_peru
-    volumes:
-      - ./stack/ssh_tunnel/bd-tunnel.sh:/bd-tunnel.sh:ro
-      - ./stack:/keys
-    command: sh /bd-tunnel.sh
-    env_file:
-      - ./stack/ssh_tunnel/.env
-    networks:
-      - rabbitmq_net
-    restart: always
-    healthcheck:
-      test: ["CMD", "sh", "-c", "netstat -tn | grep -q ESTABLISHED"]
-      interval: 25s
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 40s
       timeout: 10s
       retries: 3
+      start_period: 10s
     logging:
       driver: "json-file"
       options:
@@ -56,117 +27,137 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1000M
+          memory: 4096M
+        reservations:
+          memory: 2048M
+    restart: always
+  
+  ssh_CEJ_Peru:
+    image: alpine:latest
+    container_name: ssh_CEJ_Peru
+    volumes:
+      - ./stack/ssh_tunnel/bd-tunnel.sh:/bd-tunnel.sh:ro
+      - ./stack:/keys
+    command: sh /bd-tunnel.sh
+    env_file:
+      - ./stack/ssh_tunnel/.env
+    networks:
+      - CEJ_Peru_net
+    restart: always
+    healthcheck:
+      test: ["CMD", "sh", "-c", "netstat -tn | grep -q ESTABLISHED"]
+      interval: 30s
+      timeout: 15s
+      retries: 4
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
         reservations:
           memory: 256M
 
-  ms_watcher:
+  ms_watcher_cej:
+    image: ms_watcher_cej:latest
+    container_name: ms_watcher_cej
+    restart: always
     build:
-      context: ./ms_watcher
-      dockerfile: dockerfile
-    container_name: ms_watcher_cej_peru
+      context: ./ms_watcher_cej
+      dockerfile: Dockerfile
     ports:
       - "127.0.0.1:5090:5090"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
+    
     networks:
-      - rabbitmq_net
+      - CEJ_Peru_net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5090/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5090"]
       interval: 2m
       timeout: 10s
       retries: 3
       start_period: 10s
     volumes:
-      - ./output:/app/output
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     logging:
       driver: "json-file"
       options:
-        max-size: "20m"
-        max-file: "5"
+        max-size: "10m"
+        max-file: "3"
     init: true
     deploy:
       resources:
         limits:
-          memory: 1000m
-
-
-  worker_cej_peru:
-    shm_size: 1gb
-    build:
-      context: ./worker_cej_peru
-      dockerfile: dockerfile
+          memory: 512M
+        reservations:
+          memory: 256M
+    
     depends_on:
-      rabbitmq:
-        condition: service_healthy   
-      ms_watcher:
+      rabbitmq_CEJ_Peru:
         condition: service_healthy
-    networks:
-      - rabbitmq_net
-    volumes:
-      - ./output:/app/output
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "20m"
-        max-file: "5"
-    init: true
-    deploy:
-      replicas: 10
-      resources:
-        limits:
-          memory: 2000m
 
-  upload_jsons:
-    build:
-      context: ./upload_jsons
-      dockerfile: dockerfile
-    networks:
-      - rabbitmq_net
-    volumes:
-      - ./output:/app/output
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "20m"
-        max-file: "5"
-    init: true
-    deploy:
-      resources:
-        limits:
-          memory: 200m
+  worker_cej:
+      build:
+        context: ./worker_cej
+        dockerfile: Dockerfile
 
- 
-  upload_logs:
-    build:
-      context: ./upload_logs
-      dockerfile: dockerfile
-    container_name: upload_logs
+      depends_on:
+        ms_watcher_cej:
+          condition: service_healthy
+      networks:
+        - CEJ_Peru_net
+      restart: always
+      volumes:
+        - ./temp:/app/temp
+        - /etc/localtime:/etc/localtime:ro
+        - /etc/timezone:/etc/timezone:ro
+      logging:
+        driver: "json-file"
+        options:
+          max-size: "20m"
+          max-file: "5"
+      init: true
+      deploy:
+        replicas: 5
 
- 
-    networks:
-      - rabbitmq_net
-    volumes:
-      - ./output:/app/output
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "20m"
-        max-file: "5"
-    init: true
-    deploy:
-      #replicas: 25
-      resources:
-        limits:
-          memory: 2000m
+        resources:
+          limits:
+            memory: 2000m
 
+
+  # # recolector:
+  # #     build:
+  # #       context: ./recolector
+  # #       dockerfile: Dockerfile
+  # #     container_name: recolector
+  # #     networks:
+  # #       - CEJ_Peru_net
+  # #     restart: always
+  # #     volumes:
+  # #       - CEJ_temp_data:/app/temp
+  # #       - /etc/localtime:/etc/localtime:ro
+  # #       - /etc/timezone:/etc/timezone:ro
+  # #     logging:
+  # #       driver: "json-file"
+  # #       options:
+  # #         max-size: "20m"
+  # #         max-file: "5"
+  # #     init: true
+  # #     deploy:
+  # #       resources:
+  # #         limits:
+  # #           memory: 500M
+
+
+
+
+
+volumes:
+  CEJ_temp_data:
 
 networks:
-  rabbitmq_net:
+  CEJ_Peru_net:
     driver: bridge
-    
